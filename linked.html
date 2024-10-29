@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room Allocation Search</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #f0f0f0, #c9d6ff);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      max-width: 600px;
+      width: 100%;
+      animation: fadeIn 1s;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      font-weight: bold;
+      margin: 10px 0 5px;
+      display: block;
+    }
+
+    input[type="text"] {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #5cb85c;
+      outline: none;
+      box-shadow: 0 0 5px rgba(92, 184, 92, 0.5);
+    }
+
+    button {
+      background-color: #5cb85c;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: #4cae4c;
+      transform: scale(1.05);
+    }
+
+    .result, .allocation-list {
+      margin-top: 20px;
+      text-align: center;
+      animation: fadeIn 1s;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      transition: transform 0.2s;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      transition: background-color 0.3s;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      color: #333;
+    }
+
+    tr:hover {
+      background-color: #e0f7fa;
+    }
+
+    .delete-btn {
+      color: red;
+      cursor: pointer;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+
+    .delete-btn:hover {
+      color: darkred;
+    }
+
+    .footer-link {
+      margin-top: 20px;
+    }
+
+    .footer-link a {
+      text-decoration: none;
+      font-weight: bold;
+      color: #5cb85c;
+      transition: color 0.3s;
+    }
+
+    .footer-link a:hover {
+      color: #4cae4c;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>SEARCH ROOM ALLOTMENT</h2>
+    <label for="searchRegNumber">Enter Registration Number:</label>
+    <input type="text" id="searchRegNumber" required />
+    <button onclick="searchAllocation()">Search</button>
+    
+    <button onclick="displayAllAllocations()">Show All Allocations</button>
+
+    <div class="result" id="result">
+    </div>
+
+    <div class="allocation-list" id="allocationList">
+    </div>
+
+    <div class="footer-link">
+      <button onclick="goBack()">Go Back</button>
+    </div>
+  </div>
+
+  <script>
+    class Node {
+      constructor(data) {
+        this.data = data;
+        this.next = null;
+      }
+    }
+
+    class LinkedList {
+      constructor() {
+        this.head = null;
+      }
+
+      insert(data) {
+        const newNode = new Node(data);
+        if (!this.head) {
+          this.head = newNode;
+          return;
+        }
+        let current = this.head;
+        while (current.next) {
+          current = current.next;
+        }
+        current.next = newNode;
+      }
+
+      search(regNumber) {
+        let current = this.head;
+        while (current) {
+          if (current.data.regNumber === regNumber) {
+            return current.data;
+          }
+          current = current.next;
+        }
+        return null;
+      }
+
+      getAll() {
+        const dataList = [];
+        let current = this.head;
+        while (current) {
+          dataList.push(current.data);
+          current = current.next;
+        }
+        return dataList;
+      }
+
+      delete(index) {
+        if (!this.head) return;
+        let current = this.head;
+
+        if (index === 0) {
+          this.head = current.next;
+          return;
+        }
+
+        for (let i = 0; current !== null && i < index - 1; i++) {
+          current = current.next;
+        }
+
+        if (current === null || current.next === null) return;
+
+        current.next = current.next.next;
+      }
+    }
+
+    const allocationList = new LinkedList();
+    const allocationData = JSON.parse(localStorage.getItem("allocations")) || [];
+    allocationData.forEach(item => allocationList.insert(item));
+
+    function searchAllocation() {
+      const regNumber = document.getElementById("searchRegNumber").value.trim();
+      const student = allocationList.search(regNumber);
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
+
+      if (student) {
+        resultDiv.innerHTML = `
+          <h3>Allocation Details:</h3>
+          <p><strong>Name:</strong> ${student.name}</p>
+          <p><strong>Register Number:</strong> ${student.regNumber}</p>
+          <p><strong>Branch:</strong> ${student.branch}</p>
+          <p><strong>CGPA:</strong> ${student.cgpa}</p>
+          <p><strong>Room Type:</strong> ${student.roomType}</p>
+        `;
+      } else {
+        resultDiv.innerHTML = "<p>No allocation found for the entered registration number.</p>";
+      }
+    }
+
+    function displayAllAllocations() {
+      const allocationListDiv = document.getElementById("allocationList");
+      allocationListDiv.innerHTML = "<h3>All Allocations:</h3>";
+
+      const allAllocations = allocationList.getAll();
+      if (allAllocations.length === 0) {
+        allocationListDiv.innerHTML += "<p>No allocations have been made yet.</p>";
+        return;
+      }
+
+      let tableHTML = `
+        <table>
+          <tr>
+            <th>Name</th>
+            <th>Register Number</th>
+            <th>Branch</th>
+            <th>CGPA</th>
+            <th>Room Type</th>
+            <th>Action</th>
+          </tr>
+      `;
+
+      allAllocations.forEach((student, index) => {
+        tableHTML += `
+          <tr>
+            <td>${student.name}</td>
+            <td>${student.regNumber}</td>
+            <td>${student.branch}</td>
+            <td>${student.cgpa}</td>
+            <td>${student.roomType}</td>
+            <td><span class="delete-btn" onclick="deleteAllocation(${index})">X</span></td>
+          </tr>
+        `;
+      });
+
+      tableHTML += `</table>`;
+      allocationListDiv.innerHTML += tableHTML;
+    }
+
+    function deleteAllocation(index) {
+      allocationList.delete(index);
+      const allocationData = allocationList.getAll();
+      localStorage.setItem("allocations", JSON.stringify(allocationData));
+      displayAllAllocations();
+    }
+
+    function goBack() {
+      window.history.back();
+    }
+  </script>
+</body>
+</html>
+
+
